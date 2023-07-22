@@ -3,11 +3,21 @@
 #include "dmalloc.hh"
 #include <cassert>
 #include <cstring>
+#include <unordered_map>
+#include <string>
 
 static dmalloc_stats global_stats;
 static bool dmalloc_status;
 static int valid_free;
 static uintptr_t malloc_address;
+
+struct MallocInfo {
+    std::string file;
+    long line;
+    size_t size;
+};
+
+static std::unordered_map<void*, MallocInfo> malloc_map;
 
 /**
  * dmalloc(sz,file,line)
@@ -36,6 +46,7 @@ void* dmalloc(size_t sz, const char* file, long line) {
         *ptr = sz;
 
         *(uint32_t*)((char*)ptr + sz + sizeof(size_t)) = SECRET_VALUE;
+        malloc_map[ptr] = {file, line, sz};
 
         global_stats.nactive ++ ;
         global_stats.ntotal ++ ;
@@ -109,6 +120,11 @@ void dfree(void* ptr, const char* file, long line) {
     global_stats.active_size -= sz;
     valid_free -- ;
     base_free(true_ptr);
+
+    auto it = malloc_map.find(true_ptr);
+    if (it != malloc_map.end()) {
+        malloc_map.erase(it);
+    }
 }
 
 /**
@@ -173,4 +189,13 @@ void print_statistics() {
  */
 void print_leak_report() {
     // Your code here.
+    if(valid_free == 0) {
+        return;
+    }
+    
+    for (const auto& pair : malloc_map) {
+        const auto& info = pair.second;
+        printf("LEAK CHECK: %s:%ld: allocated object %p with size %ld\n",
+               info.file.c_str(), info.line, pair.first + sizeof(size_t), info.size);
+    }
 }
