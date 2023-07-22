@@ -74,12 +74,12 @@ void dfree(void* ptr, const char* file, long line) {
     }
 
     if ((dmalloc_status == 0) || (ptr < (void*)global_stats.heap_min)) {
-        fprintf(stderr, "MEMORY BUG???: invalid free of pointer , not in heap\n");
+        fprintf(stderr, "MEMORY BUG???: invalid free of pointer %p, not in heap\n", ptr);
         abort();
     }
 
     if (valid_free <= 0) {
-        fprintf(stderr,"MEMORY BUG???: invalid free of pointer %p, double free\n",ptr);
+        fprintf(stderr,"MEMORY BUG???: invalid free of pointer %p, double free\n", ptr);
         abort();
     }
 
