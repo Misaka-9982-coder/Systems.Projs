@@ -83,14 +83,12 @@ void dfree(void* ptr, const char* file, long line) {
         abort();
     }
 
-    if (ptr) {
-        size_t* true_ptr = ((size_t*) ptr) - 1;
-        size_t sz = *true_ptr;
-        global_stats.nactive -- ;
-        global_stats.active_size -= sz;
-        valid_free -- ;
-        base_free(true_ptr);
-    }
+    size_t* true_ptr = ((size_t*) ptr) - 1;
+    size_t sz = *true_ptr;
+    global_stats.nactive -- ;
+    global_stats.active_size -= sz;
+    valid_free -- ;
+    base_free(true_ptr);
 }
 
 /**
