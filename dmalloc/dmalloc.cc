@@ -19,6 +19,11 @@ static dmalloc_stats global_stats;
 void* dmalloc(size_t sz, const char* file, long line) {
     (void) file, (void) line;   // avoid uninitialized variable warnings
     // Your code here.
+    if (sz > SIZE_MAX - sizeof(size_t)) {
+        global_stats.nfail++;
+        global_stats.fail_size += sz;
+        return NULL;
+    }
 
     size_t total_size = sz + sizeof(size_t);
     size_t* ptr = (size_t*) base_malloc(total_size);
@@ -83,6 +88,12 @@ void dfree(void* ptr, const char* file, long line) {
  */
 void* dcalloc(size_t nmemb, size_t sz, const char* file, long line) {
     // Your code here (to fix test014).
+    if (nmemb != 0 && sz > SIZE_MAX / nmemb) {
+        global_stats.nfail++;
+        global_stats.fail_size += sz;
+        return NULL;
+    }
+
     void* ptr = dmalloc(nmemb * sz, file, line);
     if (ptr) {
         memset(ptr, 0, nmemb * sz);
