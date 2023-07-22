@@ -1,4 +1,5 @@
 #define DMALLOC_DISABLE 1
+#define SECRET_VALUE 0xDEADBEEF
 #include "dmalloc.hh"
 #include <cassert>
 #include <cstring>
@@ -28,10 +29,14 @@ void* dmalloc(size_t sz, const char* file, long line) {
         return NULL;
     }
 
-    size_t total_size = sz + sizeof(size_t);
+    size_t total_size = sz + sizeof(size_t) + sizeof(SECRET_VALUE);
     size_t* ptr = (size_t*) base_malloc(total_size);
+
     if (ptr) {
         *ptr = sz;
+
+        *(uint32_t*)((char*)ptr + sz + sizeof(size_t)) = SECRET_VALUE;
+
         global_stats.nactive ++ ;
         global_stats.ntotal ++ ;
         global_stats.active_size += sz;
@@ -92,6 +97,11 @@ void dfree(void* ptr, const char* file, long line) {
 
     if (free_address > malloc_address) {
         fprintf(stderr,"MEMORY BUG: %s:%ld: invalid free of pointer %p, not allocated\n", file, line, ptr);
+        abort();
+    }
+
+    if (*(uint32_t*)((char*)true_ptr + sz + sizeof(size_t)) != SECRET_VALUE) {
+        fprintf(stderr,"MEMORY BUG???: detected wild write during free of pointer %p\n", ptr);
         abort();
     }
 
