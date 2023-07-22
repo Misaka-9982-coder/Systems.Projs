@@ -3,6 +3,8 @@
 #include <cassert>
 #include <cstring>
 
+static dmalloc_stats global_stats;
+
 /**
  * dmalloc(sz,file,line)
  *      malloc() wrapper. Dynamically allocate the requested amount `sz` of memory and 
@@ -67,6 +69,7 @@ void get_statistics(dmalloc_stats* stats) {
     // Stub: set all statistics to enormous numbers
     memset(stats, 255, sizeof(dmalloc_stats));
     // Your code here.
+    memcpy(stats, &global_stats, sizeof(dmalloc_stats));
 }
 
 /**
