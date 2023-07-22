@@ -87,8 +87,6 @@ void* dmalloc(size_t sz, const char* file, long line) {
 void dfree(void* ptr, const char* file, long line) {
     (void) file, (void) line;   // avoid uninitialized variable warnings
     // Your code here.
-    uintptr_t free_address = (uintptr_t) ptr;
-
     if (!ptr) {
         return;
     }
@@ -103,13 +101,24 @@ void dfree(void* ptr, const char* file, long line) {
         abort();
     }
 
-    size_t* true_ptr = ((size_t*) ptr) - 1;
-    size_t sz = *true_ptr;
-
-    if (free_address > malloc_address) {
-        fprintf(stderr,"MEMORY BUG: %s:%ld: invalid free of pointer %p, not allocated\n", file, line, ptr);
+    auto iter = malloc_map.find((size_t*) ptr - 1);
+    if (iter == malloc_map.end()) {
+        fprintf(stderr, "MEMORY BUG: %s:%ld: invalid free of pointer %p, not allocated\n", file, line, ptr);
+        for (const auto& pair : malloc_map) {
+            char* start = static_cast<char*>(pair.first) + sizeof(size_t);
+            char* end = start + pair.second.size;
+            if (ptr >= start && ptr < end) {
+                fprintf(stderr, "%s:%ld: %p is %ld bytes inside a %ld byte region allocated here\n",
+                        pair.second.file.c_str(), pair.second.line, ptr,
+                        static_cast<char*>(ptr) - start, pair.second.size);
+                break;
+            }
+        }
         abort();
     }
+    
+    size_t* true_ptr = ((size_t*) ptr) - 1;
+    size_t sz = *true_ptr;
 
     if (*(uint32_t*)((char*)true_ptr + sz + sizeof(size_t)) != SECRET_VALUE) {
         fprintf(stderr,"MEMORY BUG???: detected wild write during free of pointer %p\n", ptr);
