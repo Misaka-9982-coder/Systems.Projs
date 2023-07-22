@@ -5,6 +5,7 @@
 
 static dmalloc_stats global_stats;
 static bool dmalloc_status;
+static int valid_free;
 
 /**
  * dmalloc(sz,file,line)
@@ -45,6 +46,7 @@ void* dmalloc(size_t sz, const char* file, long line) {
         }
 
         dmalloc_status = 1;
+        valid_free ++ ;
 
         return ptr + 1;
     } else {
@@ -76,11 +78,17 @@ void dfree(void* ptr, const char* file, long line) {
         abort();
     }
 
+    if (valid_free <= 0) {
+        fprintf(stderr,"MEMORY BUG???: invalid free of pointer %p, double free\n",ptr);
+        abort();
+    }
+
     if (ptr) {
         size_t* true_ptr = ((size_t*) ptr) - 1;
         size_t sz = *true_ptr;
         global_stats.nactive -- ;
         global_stats.active_size -= sz;
+        valid_free -- ;
         base_free(true_ptr);
     }
 }
