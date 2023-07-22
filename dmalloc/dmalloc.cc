@@ -152,7 +152,7 @@ void dfree(void* ptr, const char* file, long line) {
 void* dcalloc(size_t nmemb, size_t sz, const char* file, long line) {
     // Your code here (to fix test014).
     if (nmemb != 0 && sz > SIZE_MAX / nmemb) {
-        global_stats.nfail++;
+        global_stats.nfail ++ ;
         global_stats.fail_size += sz;
         return NULL;
     }
@@ -198,10 +198,6 @@ void print_statistics() {
  */
 void print_leak_report() {
     // Your code here.
-    if(valid_free == 0) {
-        return;
-    }
-    
     for (const auto& pair : malloc_map) {
         const auto& info = pair.second;
         char* ptr = static_cast<char*>(pair.first);
