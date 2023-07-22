@@ -19,7 +19,31 @@ static dmalloc_stats global_stats;
 void* dmalloc(size_t sz, const char* file, long line) {
     (void) file, (void) line;   // avoid uninitialized variable warnings
     // Your code here.
-    return base_malloc(sz);
+
+    size_t total_size = sz + sizeof(size_t);
+    size_t* ptr = (size_t*) base_malloc(total_size);
+    if (ptr) {
+        *ptr = sz;
+        global_stats.nactive ++ ;
+        global_stats.ntotal ++ ;
+        global_stats.active_size += sz;
+        global_stats.total_size += sz;
+
+        uintptr_t block_start = (uintptr_t) ptr;
+        uintptr_t block_end = block_start + total_size;
+        if (!global_stats.heap_min || block_start < global_stats.heap_min) {
+            global_stats.heap_min = block_start;
+        }
+        if (!global_stats.heap_max || block_end > global_stats.heap_max) {
+            global_stats.heap_max = block_end;
+        }
+
+        return ptr + 1;
+    } else {
+        global_stats.nfail++;
+        global_stats.fail_size += sz;
+        return nullptr;
+    }
 }
 
 /**
@@ -34,7 +58,14 @@ void* dmalloc(size_t sz, const char* file, long line) {
 void dfree(void* ptr, const char* file, long line) {
     (void) file, (void) line;   // avoid uninitialized variable warnings
     // Your code here.
-    base_free(ptr);
+
+    if (ptr) {
+        size_t* true_ptr = ((size_t*) ptr) - 1;
+        size_t sz = *true_ptr;
+        global_stats.nactive -- ;
+        global_stats.active_size -= sz;
+        base_free(true_ptr);
+    }
 }
 
 /**
