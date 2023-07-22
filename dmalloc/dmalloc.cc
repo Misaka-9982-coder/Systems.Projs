@@ -195,7 +195,8 @@ void print_leak_report() {
     
     for (const auto& pair : malloc_map) {
         const auto& info = pair.second;
+        char* ptr = static_cast<char*>(pair.first);
         printf("LEAK CHECK: %s:%ld: allocated object %p with size %ld\n",
-               info.file.c_str(), info.line, pair.first + sizeof(size_t), info.size);
+               info.file.c_str(), info.line, ptr + sizeof(size_t), info.size);
     }
 }
