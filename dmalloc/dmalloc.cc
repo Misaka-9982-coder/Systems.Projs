@@ -6,6 +6,7 @@
 static dmalloc_stats global_stats;
 static bool dmalloc_status;
 static int valid_free;
+static uintptr_t malloc_address;
 
 /**
  * dmalloc(sz,file,line)
@@ -35,6 +36,8 @@ void* dmalloc(size_t sz, const char* file, long line) {
         global_stats.ntotal ++ ;
         global_stats.active_size += sz;
         global_stats.total_size += sz;
+
+        malloc_address += (uintptr_t) ptr + sizeof(size_t);
 
         uintptr_t block_start = (uintptr_t) ptr;
         uintptr_t block_end = block_start + total_size;
@@ -68,6 +71,7 @@ void* dmalloc(size_t sz, const char* file, long line) {
 void dfree(void* ptr, const char* file, long line) {
     (void) file, (void) line;   // avoid uninitialized variable warnings
     // Your code here.
+    uintptr_t free_address = (uintptr_t) ptr;
 
     if (!ptr) {
         return;
@@ -85,6 +89,12 @@ void dfree(void* ptr, const char* file, long line) {
 
     size_t* true_ptr = ((size_t*) ptr) - 1;
     size_t sz = *true_ptr;
+
+    if (free_address > malloc_address) {
+        fprintf(stderr,"MEMORY BUG: %s:%ld: invalid free of pointer %p, not allocated\n", file, line, ptr);
+        abort();
+    }
+
     global_stats.nactive -- ;
     global_stats.active_size -= sz;
     valid_free -- ;
