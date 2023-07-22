@@ -4,6 +4,7 @@
 #include <cstring>
 
 static dmalloc_stats global_stats;
+static bool dmalloc_status;
 
 /**
  * dmalloc(sz,file,line)
@@ -43,6 +44,8 @@ void* dmalloc(size_t sz, const char* file, long line) {
             global_stats.heap_max = block_end;
         }
 
+        dmalloc_status = 1;
+
         return ptr + 1;
     } else {
         global_stats.nfail++;
@@ -63,6 +66,15 @@ void* dmalloc(size_t sz, const char* file, long line) {
 void dfree(void* ptr, const char* file, long line) {
     (void) file, (void) line;   // avoid uninitialized variable warnings
     // Your code here.
+
+    if (!ptr) {
+        return;
+    }
+
+    if ((dmalloc_status == 0) || (ptr < (void*)global_stats.heap_min)) {
+        fprintf(stderr, "MEMORY BUG???: invalid free of pointer , not in heap\n");
+        abort();
+    }
 
     if (ptr) {
         size_t* true_ptr = ((size_t*) ptr) - 1;
